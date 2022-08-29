@@ -1,0 +1,13 @@
+version: '3.7'
+services:
+  mysqldb:
+    image: mysql:latest
+    ports:
+      - '3306:3306'
+    environment:
+      - MYSQL_RANDOM_ROOT_PASSWORD=yes
+      - MYSQL_DATABASE=app
+      - MYSQL_USER=app
+      - MYSQL_PASSWORD=pass
+    volumes:
+      - ./data:/docker-entrypoint-initdb.d
