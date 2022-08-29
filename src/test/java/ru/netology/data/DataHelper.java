@@ -103,8 +103,9 @@ public class DataHelper {
     }
 
     public static CardInfo getAnotherCard() {
-        return new CardInfo(faker.business().creditCardNumber().replaceAll("-", " "), faker.idNumber()
-                .valid());
+        return new CardInfo("5559 0000 0000 0008", faker.idNumber().valid());
+//        return new CardInfo(faker.business().creditCardNumber().replaceAll("-", " "), faker.idNumber()
+//                .valid());
     }
 
     public static TransferInfo getTransferInfo(String from, String to, int amount) {
