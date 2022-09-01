@@ -33,11 +33,6 @@ public class DataHelper {
     }
 
     @Value
-    public static class RequestSpecInfo {
-        RequestSpecification requestSpecification;
-    }
-
-    @Value
     public static class TransferInfo {
         String from;
         String to;
@@ -66,32 +61,10 @@ public class DataHelper {
         return new AuthInfo("vasya", "qwerty123");
     }
 
-    @SneakyThrows
     public static VerificationInfo getVerificationInfo() {
-        String verificationCode = null;
-        var verificationCodeSQL = "SELECT code FROM auth_codes ORDER BY created DESC LIMIT 1;";
-        try (
-                var conn = DriverManager
-                        .getConnection("jdbc:mysql://localhost:3306/app", "app", "pass");
-                var getVerCode = conn.prepareStatement(verificationCodeSQL)
-        ) {
-            try (var verCode = getVerCode.executeQuery()) {
-                if (verCode.next()) {
-                    verificationCode = verCode.getString("code");
-                }
-            }
-        }
-        return new VerificationInfo(getAuthInfo().login, verificationCode);
-    }
+        String verificationCode = DataBaseManager.getVerificationCode();
 
-    public static RequestSpecInfo getReqSpec() {
-        RequestSpecification requestSpec = new RequestSpecBuilder()
-                .setBaseUri("http://localhost")
-                .setPort(9999)
-                .setContentType(ContentType.JSON)
-                .log(LogDetail.ALL)
-                .build();
-        return new RequestSpecInfo(requestSpec);
+        return new VerificationInfo(getAuthInfo().login, verificationCode);
     }
 
     public static CardInfo getFirstCard() {

@@ -4,9 +4,9 @@ import lombok.SneakyThrows;
 
 import java.sql.DriverManager;
 
-public class ClearDataBase {
+public class DataBaseManager {
 
-    private ClearDataBase() {
+    private DataBaseManager() {
     }
 
     @SneakyThrows
@@ -28,5 +28,23 @@ public class ClearDataBase {
             clearCardTransactionsStmt.executeUpdate();
             clearUsersStmt.executeUpdate();
         }
+    }
+
+    @SneakyThrows
+    public static String getVerificationCode() {
+        String verificationCode = null;
+        var verificationCodeSQL = "SELECT code FROM auth_codes ORDER BY created DESC LIMIT 1;";
+        try (
+                var conn = DriverManager
+                        .getConnection("jdbc:mysql://localhost:3306/app", "app", "pass");
+                var getVerCode = conn.prepareStatement(verificationCodeSQL)
+        ) {
+            try (var verCode = getVerCode.executeQuery()) {
+                if (verCode.next()) {
+                    verificationCode = verCode.getString("code");
+                }
+            }
+        }
+        return verificationCode;
     }
 }

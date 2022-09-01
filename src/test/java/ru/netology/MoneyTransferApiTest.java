@@ -4,114 +4,76 @@ import io.restassured.specification.RequestSpecification;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import ru.netology.data.ClearDataBase;
+import ru.netology.data.DataBaseManager;
 import ru.netology.data.DataHelper;
+import ru.netology.data.RequestApi;
+
+import java.util.Arrays;
+import java.util.List;
 
 import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 
 public class MoneyTransferApiTest {
 
-    private static final RequestSpecification requestSpec = DataHelper.getReqSpec().getRequestSpecification();
     private static String newToken;
-
-    public DataHelper.CardResponseInfo[] checkCards(String token) {
-        DataHelper.CardResponseInfo[] cards =
-                given()
-                        .spec(requestSpec)
-                        .auth().oauth2(token)
-                        .when()
-                        .get("api/cards")
-                        .then()
-                        .statusCode(200)
-                        .extract()
-                        .response()
-                        .as(DataHelper.CardResponseInfo[].class);
-        return cards;
-    }
+    String idFirstCard = DataHelper.getFirstCard().getId();
+    String idSecondCard = DataHelper.getSecondCard().getId();
 
     @BeforeAll
     public static void authorization() {
-        given()
-                .spec(requestSpec)
-                .body(DataHelper.getAuthInfo())
-                .when()
-                .post("/api/auth")
-                .then()
-                .statusCode(200);
-
-        DataHelper.TokenInfo getToken = given()
-                .spec(requestSpec)
-                .body(DataHelper.getVerificationInfo())
-                .when()
-                .post("/api/auth/verification")
-                .then()
-                .statusCode(200)
-                .extract()
-                .response()
-                .as(DataHelper.TokenInfo.class);
-
-        newToken = getToken.getToken();
+        RequestApi.authorization();
+        String token = RequestApi.getToken();
+        newToken = token;
     }
-
-    @AfterAll
-    static void clearDataBase() {
-        ClearDataBase.clearBase();
-    }
+//    @AfterAll
+//    static void clearDataBase() {
+//        DataBaseManager.clearBase();
+//    }
 
     @Test
     void shouldTransfer() {
-        String id = DataHelper.getFirstCard().getId();
+        DataHelper.CardResponseInfo[] cardsBefore = RequestApi.checkCards(newToken);
 
-        DataHelper.CardResponseInfo[] cardsBefore = checkCards(newToken);
-        int balanceBefore = DataHelper.getCardBalance(cardsBefore, id);
-
+        int firstCardBalanceBefore = DataHelper.getCardBalance(cardsBefore, idFirstCard);
+        int secondCardBalanceBefore = DataHelper.getCardBalance(cardsBefore, idSecondCard);
         String cardFrom = DataHelper.getFirstCard().getNumber();
         String cardTo = DataHelper.getAnotherCard().getNumber();
         int amount = 5000;
 
-        given()
-                .spec(requestSpec)
-                .auth().oauth2(newToken)
-                .body(DataHelper.getTransferInfo(cardFrom, cardTo, amount))
-                .when()
-                .post("/api/transfer")
-                .then()
-                .statusCode(200);
+        RequestApi.moneyTransfer(newToken, cardFrom, cardTo, amount, 200);
 
-        DataHelper.CardResponseInfo[] cardsAfter = checkCards(newToken);
-        int balanceAfter = DataHelper.getCardBalance(cardsAfter, id);
+        DataHelper.CardResponseInfo[] cardsAfter = RequestApi.checkCards(newToken);
 
-        int balanceExpected = balanceBefore - amount;
+        List<Integer> actualCardsBalance = Arrays.asList(DataHelper.getCardBalance(cardsAfter, idFirstCard),
+                DataHelper.getCardBalance(cardsAfter, idSecondCard));
+        List<Integer> expectedCardsBalance = Arrays.asList(firstCardBalanceBefore - amount,
+                secondCardBalanceBefore);
 
-        assertEquals(balanceExpected, balanceAfter);
+        assertIterableEquals(expectedCardsBalance, actualCardsBalance);
     }
 
     @Test
     void shouldBadRequestWithNoMoneyForTransfer() {
-        String id = DataHelper.getFirstCard().getId();
+        DataHelper.CardResponseInfo[] cardsBefore = RequestApi.checkCards(newToken);
 
-        DataHelper.CardResponseInfo[] cardsBefore = checkCards(newToken);
-        int balanceBefore = DataHelper.getCardBalance(cardsBefore, id);
+        int firstCardBalanceBefore = DataHelper.getCardBalance(cardsBefore, idFirstCard);
+        int secondCardBalanceBefore = DataHelper.getCardBalance(cardsBefore, idSecondCard);
 
         String cardFrom = DataHelper.getFirstCard().getNumber();
         String cardTo = DataHelper.getAnotherCard().getNumber();
-        int amount = balanceBefore + 5000;
+        int amount = firstCardBalanceBefore + 5000;
 
-        given()
-                .spec(requestSpec)
-                .auth().oauth2(newToken)
-                .body(DataHelper.getTransferInfo(cardFrom, cardTo, amount))
-                .when()
-                .post("/api/transfer")
-                .then()
-                .statusCode(400);
+        RequestApi.moneyTransfer(newToken, cardFrom, cardTo, amount, 400);
 
-        DataHelper.CardResponseInfo[] cardsAfter = checkCards(newToken);
-        int balanceAfter = DataHelper.getCardBalance(cardsAfter, id);
+        DataHelper.CardResponseInfo[] cardsAfter = RequestApi.checkCards(newToken);
 
-        int balanceExpected = balanceBefore;
+        List<Integer> actualCardsBalance = Arrays.asList(DataHelper.getCardBalance(cardsAfter, idFirstCard),
+                DataHelper.getCardBalance(cardsAfter, idSecondCard));
+        List<Integer> expectedCardsBalance = Arrays.asList(firstCardBalanceBefore,
+                secondCardBalanceBefore);
 
-        assertEquals(balanceExpected, balanceAfter);
+        assertIterableEquals(expectedCardsBalance, actualCardsBalance);
     }
 }
