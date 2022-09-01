@@ -1,6 +1,5 @@
 package ru.netology;
 
-import io.restassured.specification.RequestSpecification;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -11,8 +10,6 @@ import ru.netology.data.RequestApi;
 import java.util.Arrays;
 import java.util.List;
 
-import static io.restassured.RestAssured.given;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 
 public class MoneyTransferApiTest {
@@ -27,10 +24,10 @@ public class MoneyTransferApiTest {
         String token = RequestApi.getToken();
         newToken = token;
     }
-//    @AfterAll
-//    static void clearDataBase() {
-//        DataBaseManager.clearBase();
-//    }
+    @AfterAll
+    static void clearDataBase() {
+        DataBaseManager.clearBase();
+    }
 
     @Test
     void shouldTransfer() {
